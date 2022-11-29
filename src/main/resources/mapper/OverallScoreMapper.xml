@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kkcloud.trainee.system.mapper.OverallScoreMapper">
+
+    <resultMap id="ResultMap" type="com.kkcloud.trainee.system.model.OverallScoreModel">
+        <result column="department_id" property="deptId"/>
+        <result column="user_username" property="username"/>
+        <result column="group_name" property="groupName"/>
+        <result column="total_points" property="totalScore"/>
+        <result column="final_ranking_letter_grade" property="letterGrade"/>
+    </resultMap>
+
+    <select id="getOverAllScore" resultMap="ResultMap">
+        SELECT tbl_group.department_id,
+               tbl_user.user_username,
+               tbl_group.group_name,
+               (total_lines_of_codes_rate + learning_performance + jira_working_hours_rate +
+                trainee_total_average_ingroup_score_rate + development_process_performance +
+                actual_working_hours_rate + (total_bonus - total_deduction)) AS total_points,
+               tbl_trainee_evaluation.final_ranking_letter_grade
+        FROM tbl_trainee_evaluation
+            INNER JOIN tbl_user ON tbl_user.user_id = tbl_trainee_evaluation.trainee_user_id
+            INNER JOIN tbl_team ON tbl_team.team_id = tbl_user.team_id
+            INNER JOIN tbl_group ON tbl_group.group_id = tbl_team.group_id
+        WHERE EXTRACT(YEAR_MONTH FROM tbl_trainee_evaluation.trainee_evaluation_date) = #{traineeEvaluationDate}
+        ORDER BY total_points DESC , final_ranking_letter_grade ASC
+    </select>
+
+
+
+    <resultMap id="ResultMap2" type="com.kkcloud.trainee.system.model.AllIndividualGradeRankingModel">
+        <result column="trainee_user_id" property="userId"/>
+        <result column="user_username" property="username"/>
+        <result column="trainee_evaluation_date" property="evaluationDate"/>
+        <result column="total_lines_of_codes_rate" property="linesOfCodes"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHours"/>
+        <result column="learning_performance" property="learningPerformance"/>
+        <result column="development_process_performance" property="developmentProcessPerformance"/>
+        <result column="avg_in_group_performance" property="avgGroupPerformance"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHours"/>
+        <result column="total_bonus" property="bonusPoints"/>
+        <result column="total_deduction" property="totalDeduction"/>
+        <result column="total_points" property="totalPoints"/>
+    </resultMap>
+
+
+
+    <resultMap id="RankingResult" type="com.kkcloud.trainee.system.model.IGPModel2">
+        <result column="user_id" property="userId"/>
+        <result column="user_username" property="username"/>
+        <result column="role_title" property="role"/>
+        <result column="group_name" property="group"/>
+        <result column="average_teamwork" property="average_teamwork"/>
+        <result column="average_work_attitude" property="average_work_attitude"/>
+        <result column="average_personal_growth" property="average_personal_growth"/>
+        <result column="average_professional_level" property="average_professional_level"/>
+        <result column="average_work_under_pressure" property="average_work_under_pressure"/>
+        <result column="total_points" property="total_points"/>
+        <result column="ranking_score" property="ranking_score"/>
+    </resultMap>
+
+    <select id="getOverAllRank" resultMap="RankingResult">
+        WITH tbl_temp AS (
+            SELECT tbl_user.user_id, tbl_user.user_username, t2.role_title, t4.group_name, AVG(teamwork) as average_teamwork, AVG(work_attitude) as average_work_attitude, AVG(personal_growth) as                    average_personal_growth, AVG(professional_level) as average_professional_level, AVG(work_under_pressure) as average_work_under_pressure,
+                   (AVG(work_attitude) + AVG(professional_level) + AVG(personal_growth) + AVG(teamwork) + AVG(work_under_pressure)) as Total_points,
+                   ROW_NUMBER() OVER(ORDER BY (AVG(work_attitude) + AVG(professional_level) + AVG(personal_growth) + AVG(teamwork)+ AVG(work_under_pressure)) DESC )
+                   RowNumber
+            FROM tbl_trainee_in_group_evaluation
+                     INNER JOIN tbl_trainee_evaluation as t5 on tbl_trainee_in_group_evaluation.trainee_evaluation_id  = t5.trainee_evaluation_id
+                     INNER JOIN tbl_user on t5.trainee_user_id = tbl_user.user_id
+                     INNER JOIN tbl_role as t2 on tbl_user.role_id = t2.role_id
+                     INNER JOIN tbl_team as t3 on tbl_user.team_id = t3.team_id
+                     INNER JOIN tbl_group as t4 on t4.group_id = t3.group_id
+            WHERE EXTRACT(YEAR_MONTH FROM tbl_trainee_in_group_evaluation.update_at) = #{traineeEvaluationDate}
+            GROUP BY user_id,user_username, role_title, group_name
+        )
+        SELECT user_id, user_username, role_title, group_name, average_teamwork, average_work_attitude, average_personal_growth, average_professional_level, average_work_under_pressure, total_points,
+               CASE
+                   WHEN RowNumber =1 THEN 20
+                   WHEN RowNumber =2 THEN 15
+                   WHEN RowNumber =3 THEN 10
+                   ELSE 5
+                   END AS ranking_score
+        FROM tbl_temp
+
+    </select>
+
+
+    <resultMap id="ResultMap4" type="com.kkcloud.trainee.system.model.TeamListModel">
+        <result column="group_id" property="groupId"/>
+        <result column="group_name" property="groupName"/>
+        <result column="groupCount" property="groupCount"/>
+    </resultMap>
+
+
+    <select id="getTeamByDepartmentId" resultMap="ResultMap4">
+        SELECT tbl_team.group_id, tbl_group.group_name, COUNT(*) as groupCount FROM tbl_group
+                                                                                        JOIN tbl_team On tbl_group.group_id = tbl_team.group_id
+                                                                                        JOIN tbl_user On tbl_team.team_id = tbl_user.team_id
+        where tbl_user.role_id =3 and tbl_group.department_id = 1
+        GROUP BY tbl_group.group_id
+        ORDER BY tbl_group.group_id ASC
+
+    </select>
+
+
+    <select id="countInGrouptableRow" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM tbl_trainee_in_group_evaluation as ttv
+                 INNER JOIN tbl_user as tu ON ttv.evaluator_user_id = tu.user_id
+        WHERE tu.role_id = 3 and EXTRACT(YEAR_MONTH FROM ttv.created_at) = #{date}
+    </select>
+
+
+
+
+
+
+</mapper>

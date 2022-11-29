@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kkcloud.trainee.system.mapper.TeamPerformanceReportMapper">
+
+    <resultMap id="ResultMap" type="com.kkcloud.trainee.system.model.TeamPerformanceModel">
+        <result column="total_lines_of_codes" property="totalCodeLines"/>
+        <result column="total_bonus" property="totalBonus"/>
+        <result column="total_score" property="totalScore"/>
+        <result column="ranking_score" property="rankScore"/>
+    </resultMap>
+
+    <resultMap id="TeamCodeListMap" type="com.kkcloud.trainee.system.model.TeamCodeListModel">
+
+        <result column="group_name" property="group_name"/>
+        <result column="total_members" property="total_members"/>
+        <result column="total_codes" property="total_codes"/>
+        <result column="earned_point" property="earned_point"/>
+
+    </resultMap>
+
+    <select id="getGroupPoints" resultType="Integer">
+        WITH tbl_groups AS (
+            SELECT tbl_user.user_username, t3.group_id,
+                   ROW_NUMBER() OVER(ORDER BY (AVG(work_attitude) + AVG(professional_level) + AVG(personal_growth) + AVG(teamwork)+ AVG(work_under_pressure)) DESC ) AS RowNumber
+            FROM tbl_trainee_in_group_evaluation
+                     INNER JOIN tbl_trainee_evaluation as t5 on tbl_trainee_in_group_evaluation.trainee_evaluation_id  = t5.trainee_evaluation_id
+                     INNER JOIN tbl_user on t5.trainee_user_id = tbl_user.user_id
+                     INNER JOIN tbl_role as t2 on tbl_user.role_id = t2.role_id
+                     INNER JOIN tbl_team as t3 on tbl_user.team_id = t3.team_id
+            WHERE EXTRACT(YEAR_MONTH FROM tbl_trainee_in_group_evaluation.update_at) = #{monthRequested}
+            GROUP BY user_username, group_id)
+        SELECT CASE
+                   WHEN RowNumber &lt;= 10 THEN 20
+                   END AS ranking_score
+        FROM tbl_groups
+        WHERE group_id = #{groupId}
+    </select>
+
+    <select id="getCodePoints" resultType="Integer">
+        WITH tbl_temp AS (
+            SELECT tbl_group.group_name, tbl_team.group_id, COUNT(trainee_user_id) as total_members, SUM(total_lines_of_codes) as total_codes, ROW_NUMBER() OVER(ORDER BY SUM(total_lines_of_codes) DESC) RowNumber
+
+            from tbl_trainee_evaluation
+                     INNER JOIN tbl_user on tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+                     INNER JOIN tbl_team ON tbl_user.team_id = tbl_team.team_id
+                     INNER JOIN tbl_group ON tbl_team.group_id = tbl_group.group_id
+
+            WHERE EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{monthRequested}
+            GROUP BY tbl_group.group_name, tbl_team.group_id
+        )
+
+        SELECT
+            CASE
+                WHEN RowNumber = 1  THEN 30
+                WHEN RowNumber = 2 THEN 20
+                WHEN RowNumber = 3 THEN 10
+                ELSE 0
+                END AS earned_point
+        FROM tbl_temp
+        WHERE group_id = #{groupId}
+    </select>
+
+
+    <select id="findAverage" resultMap="ResultMap">
+        SELECT
+            AVG((
+                            tte.total_lines_of_codes_rate
+                            +
+                            tte.learning_performance
+                            +
+                            tte.development_process_performance
+                            +
+                            tte.jira_working_hours_rate
+                            +
+                            tte.trainee_total_average_ingroup_score
+                            +
+                            tte.actual_working_hours_rate
+                            +
+                            tte.total_bonus
+                        -
+                            tte.total_deduction
+                    )*.70) AS total_score
+        FROM tbl_trainee_evaluation AS tte
+                 INNER JOIN tbl_user AS tu ON tte.trainee_user_id = tu.user_id
+                 INNER JOIN tbl_team AS tm ON tu.team_id = tm.team_id
+                 INNER JOIN (select AVG(`tbl_trainee_in_group_evaluation`.`total_score`) AS `avg_in_group_performance`
+                             from `tbl_trainee_in_group_evaluation`) AS `taige`
+        WHERE tm.group_id = #{groupId}
+          AND EXTRACT(YEAR_MONTH FROM tte.trainee_evaluation_date) = #{monthRequested}
+
+    </select>
+
+
+    <select id="countRecord" resultType="java.lang.Integer">
+        SELECT
+          COUNT(*)
+        FROM tbl_trainee_evaluation AS tte
+                 INNER JOIN tbl_user AS tu ON tte.trainee_user_id = tu.user_id
+                 INNER JOIN tbl_team AS tm ON tu.team_id = tm.team_id
+                 INNER JOIN tbl_trainee_in_group_evaluation AS ttige ON tte.trainee_evaluation_id = ttige.trainee_evaluation_id
+        WHERE tm.group_id = #{groupId}
+          AND EXTRACT(YEAR_MONTH FROM tte.created_at) = #{monthRequested} and tte.is_evaluated_by_mentor=1
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+    </select>
+
+
+
+    <resultMap id="getOverallScoreMap" type="com.kkcloud.trainee.system.model.TeamOverallScoreModel">
+        <result column="groupName" property="groupName"/>
+        <result column="numberOfMember" property="numberOfMember"/>
+        <result column="averageTotalScore" property="averageTotalScore"/>
+        <result column="rankPerGroup" property="rankPerGroup"/>
+    </resultMap>
+
+    <select id="getOverallScore" resultMap="getOverallScoreMap">
+        SELECT tbl_group.group_name as groupName,
+               COUNT(DISTINCT tbl_user.user_id) as numberOfMember,
+               AVG(tbl_trainee_evaluation.trainee_evaluation_total_score) as averageTotalScore,
+               ROW_NUMBER() OVER(ORDER BY AVG(tbl_trainee_evaluation.trainee_evaluation_total_score) DESC) as rankPerGroup
+        FROM tbl_group
+                 RIGHT OUTER JOIN tbl_team ON tbl_group.group_id = tbl_team.group_id
+                 INNER JOIN tbl_user ON tbl_team.team_id = tbl_user.team_id
+                 LEFT JOIN tbl_trainee_evaluation ON tbl_user.user_id = tbl_trainee_evaluation.trainee_user_id
+        WHERE tbl_group.department_id = #{departmentId}
+          and EXTRACT(YEAR_MONTH
+                      FROM tbl_trainee_evaluation.trainee_evaluation_date) = #{traineeEvaluationDate}
+        GROUP BY tbl_group.group_id
+    </select>
+
+    <resultMap id="memberScore" type="com.kkcloud.trainee.system.model.TeamMemberScoreModel">
+        <result column="user_username" property="username"/>
+        <result column="total_lines_of_codes_rate" property="totalCodeLines"/>
+        <result column="learning_performance" property="totalLearningPerformance"/>
+        <result column="development_process_performance" property="totalDevelopmentPerformance"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHours"/>
+        <result column="trainee_total_average_ingroup_score_rate" property="avgInGroupPerformance"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHours"/>
+        <result column="total_bonus" property="totalBonus"/>
+        <result column="total_deduction" property="totalDeduction"/>
+        <result column="total_points" property="totalPoints"/>
+        <result column="final_ranking_letter_grade" property="letterGrade"/>
+
+    </resultMap>
+
+    <select id="displayMember" resultMap="memberScore">
+        SELECT
+            tu.user_username,
+            tte.total_lines_of_codes_rate,
+            tte.learning_performance,
+            tte.development_process_performance,
+            tte.jira_working_hours_rate,
+            tte.trainee_total_average_ingroup_score_rate,
+            tte.actual_working_hours_rate,
+            tte.total_bonus,
+            tte.total_deduction,
+            (tte.total_lines_of_codes_rate + tte.learning_performance +
+             tte.development_process_performance + tte.jira_working_hours_rate +
+             tte.trainee_total_average_ingroup_score_rate + tte.actual_working_hours_rate +
+             tte.total_bonus - tte.total_deduction) AS total_points,
+            tte.final_ranking_letter_grade
+        FROM tbl_trainee_evaluation AS tte
+                 INNER JOIN tbl_user AS tu ON tte.trainee_user_id = tu.user_id
+                 INNER JOIN tbl_team AS tm ON tu.team_id = tm.team_id
+        WHERE tm.group_id = #{groupId}
+          AND EXTRACT(YEAR_MONTH FROM tte.created_at) = #{monthRequested} and tte.is_evaluated_by_mentor=1
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+    </select>
+
+
+    <select id="displayMember2" resultType="java.lang.Integer">
+        SELECT
+            SUM(
+                    (total_lines_of_codes_rate + learning_performance + jira_working_hours_rate +
+                     trainee_total_average_ingroup_score_rate + development_process_performance +
+                     actual_working_hours_rate + (total_bonus - total_deduction))) AS total_points
+
+        FROM tbl_trainee_evaluation AS tte
+                 INNER JOIN tbl_user AS tu ON tte.trainee_user_id = tu.user_id
+                 INNER JOIN tbl_team AS tm ON tu.team_id = tm.team_id
+                 INNER JOIN tbl_trainee_in_group_evaluation AS ttige ON tte.trainee_evaluation_id = ttige.trainee_evaluation_id
+        WHERE tm.group_id = #{id}
+          AND EXTRACT(YEAR_MONTH FROM tte.created_at) = #{date}  and tte.is_evaluated_by_mentor=1
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+    </select>
+
+
+
+
+    <!-- CSV Download    /-->
+    <resultMap id="ExportResultMap" type="com.kkcloud.trainee.system.model.CsvExportModel">
+        <result column="user_username" property="username"/>
+        <result column="total_lines_of_codes_rate" property="totalCodeLines"/>
+        <result column="learning_performance" property="totalLearningPerformance"/>
+        <result column="development_process_performance" property="totalDevelopmentPerformance"/>
+        <result column="trainee_total_average_ingroup_score_rate" property="avg_in_group_performance"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHours"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHours"/>
+        <result column="total_bonus" property="totalBonus"/>
+        <result column="total_deduction" property="totalDeduction"/>
+        <result column="total_points" property="totalPoints"/>
+        <result column="trainee_evaluation_letter_grade" property="totalGrade"/>
+    </resultMap>
+
+    <select id="downloadRiskEntry"  resultMap="ExportResultMap">
+        SELECT tu.user_username,
+               tte.total_lines_of_codes_rate,
+               tte.learning_performance,
+               tte.development_process_performance,
+               tte.trainee_total_average_ingroup_score_rate,
+               tte.jira_working_hours_rate,
+               tte.actual_working_hours_rate,
+               tte.total_bonus,
+               tte.total_deduction,
+               (tte.total_lines_of_codes_rate + tte.learning_performance +
+                tte.development_process_performance + tte.jira_working_hours_rate +
+                tte.trainee_total_average_ingroup_score_rate + tte.actual_working_hours_rate +
+                tte.total_bonus - tte.total_deduction) AS total_points,
+               tte.trainee_evaluation_letter_grade
+        FROM tbl_trainee_evaluation AS tte
+                 INNER JOIN tbl_user AS tu ON tte.trainee_user_id = tu.user_id
+                 INNER JOIN tbl_team AS tm ON tu.team_id = tm.team_id
+        WHERE tm.group_id = #{csvExport}  and tte.is_evaluated_by_mentor=1
+          AND EXTRACT(YEAR_MONTH FROM tte.created_at) = #{monthRequested}
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+    </select>
+
+    <select id="getTeamLinesOfCode" resultMap="TeamCodeListMap">
+        WITH tbl_temp AS (
+            SELECT tbl_group.group_name, COUNT(trainee_user_id) as total_members, SUM(total_lines_of_codes) as total_codes, ROW_NUMBER() OVER(ORDER BY SUM(total_lines_of_codes) DESC) RowNumber
+
+            from tbl_trainee_evaluation
+                     INNER JOIN tbl_user on tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+                     INNER JOIN tbl_team ON tbl_user.team_id = tbl_team.team_id
+                     INNER JOIN tbl_group ON tbl_team.group_id = tbl_group.group_id
+
+            WHERE department_id = #{departmentId} AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            GROUP BY tbl_group.group_name
+        )
+
+        SELECT group_name, total_members, total_codes,
+               CASE
+                   WHEN RowNumber = 1  THEN 30
+                   WHEN RowNumber = 2 THEN 20
+                   WHEN RowNumber = 3 THEN 10
+                   ELSE 0
+
+                   END AS earned_point
+        FROM tbl_temp
+    </select>
+
+    <select id="getTeamRank" resultType="com.kkcloud.trainee.system.model.TeamRankModel">
+        SELECT
+            SUM(tte.total_lines_of_codes) AS total_lines_of_codes,
+            SUM(tte.total_bonus) AS total_bonus,
+            SUM((
+                        tte.total_lines_of_codes
+                        +
+                        tte.jira_working_hours
+                        +
+                        tte.learning_performance
+                        +
+                        tte.development_process_performance
+                        +
+                        taige.avg_in_group_performance
+                        +
+                        tte.actual_working_hours
+                        +
+                        tte.total_bonus
+                        +
+                        tte.total_deduction
+                    )*.70) AS Total_score,
+            tm.group_id as teamId
+        FROM tbl_trainee_evaluation AS tte
+                 INNER JOIN tbl_user AS tu ON tte.trainee_user_id = tu.user_id
+                 INNER JOIN tbl_team AS tm ON tu.team_id = tm.team_id
+                 INNER JOIN (select `tbl_trainee_in_group_evaluation`.`trainee_evaluation_id` AS `trainee_evaluation_id`,
+                                    AVG(`tbl_trainee_in_group_evaluation`.`total_score`) AS `avg_in_group_performance`
+                             from `tbl_trainee_in_group_evaluation`
+                             group by `tbl_trainee_in_group_evaluation`.`trainee_evaluation_id`) AS `taige`
+        WHERE EXTRACT(YEAR_MONTH FROM tte.created_at) = #{monthRequested}
+          AND tm.group_id IS NOT NULL
+        GROUP BY tm.group_id  ORDER BY (total_score) DESC
+    </select>
+
+
+</mapper>

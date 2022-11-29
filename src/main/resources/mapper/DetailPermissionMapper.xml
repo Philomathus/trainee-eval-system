@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kkcloud.trainee.system.mapper.DetailPermissionMapper">
+    <resultMap id="ResultMap" type="com.kkcloud.trainee.system.model.PermissionDetail">
+        <result column="header_title" property="headerTitle"/>
+        <result column="header_detail_title" property="headerDetailTitle"/>
+    </resultMap>
+
+    <select id="findById" resultMap="ResultMap">
+        SELECT DISTINCT
+            h.header_title AS header_title,
+            hd.header_detail_title AS header_detail_title
+        FROM
+            tbl_user
+        INNER JOIN tbl_role_permission AS rp ON tbl_user.user_id = rp.role_id
+        INNER JOIN tbl_header_detail AS hd ON hd.header_detail_id = rp.header_detail_id
+        INNER JOIN tbl_header AS h ON hd.header_id = h.header_id
+        WHERE
+            h.header_id = #{headerId}
+    </select>
+
+</mapper>

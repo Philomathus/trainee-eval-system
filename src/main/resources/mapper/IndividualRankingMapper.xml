@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kkcloud.trainee.system.mapper.IndividualRankingMapper">
+
+    <resultMap id="ResultMap" type="com.kkcloud.trainee.system.model.IndividualRankingModel">
+        <result column="user_username" property="userName"/>
+        <result column="group_name" property="groupName"/>
+        <result column="jira_working_hours" property="jiraWorkingHours"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHoursRate"/>
+    </resultMap>
+
+    <select id="getJiraWorkingHours" resultMap="ResultMap">
+        Select tbl_user.user_username, tbl_group.group_name, tbl_trainee_evaluation.jira_working_hours, tbl_trainee_evaluation.jira_working_hours_rate
+        from tbl_trainee_evaluation
+                 INNER JOIN tbl_user on tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+                 INNER JOIN tbl_team ON tbl_user.team_id = tbl_team.team_id
+                 INNER JOIN tbl_group ON tbl_team.group_id = tbl_group.group_id
+        WHERE department_id = #{departmentId} AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+        ORDER BY tbl_trainee_evaluation.jira_working_hours_rate DESC,tbl_trainee_evaluation.jira_working_hours  DESC
+    </select>
+
+    <resultMap id="ActualWork" type="com.kkcloud.trainee.system.model.ActualWorkingHoursModel">
+        <result column="user_username" property="userName"/>
+        <result column="group_name" property="groupName"/>
+        <result column="actual_working_hours" property="actualWorkingHours"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHoursRate"/>
+    </resultMap>
+    <select id="getActualHours" resultMap="ActualWork">
+        Select tbl_user.user_username, tbl_group.group_name, tbl_trainee_evaluation.actual_working_hours, tbl_trainee_evaluation.actual_working_hours_rate
+        from tbl_trainee_evaluation
+                 INNER JOIN tbl_user on tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+                 INNER JOIN tbl_team ON tbl_user.team_id = tbl_team.team_id
+                 INNER JOIN tbl_group ON tbl_team.group_id = tbl_group.group_id
+        WHERE department_id = #{departmentId} AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+        ORDER BY tbl_trainee_evaluation.actual_working_hours DESC, actual_working_hours_rate DESC
+    </select>
+</mapper>

@@ -1,0 +1,9 @@
+<<<<<<< HEAD
+.idea
+trainee-system-biz/target
+trainee-system-biz/trainee-system.iml
+=======
+trainee-system-biz/target
+trainee-system-biz/trainee-system.iml
+.idea
+>>>>>>> feature_all

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kkcloud.trainee.system.mapper.TeamMapper">
+    <resultMap id="ResultMap" type="com.kkcloud.trainee.system.model.TeamListModel">
+        <result column="group_id" property="groupId"/>
+        <result column="group_name" property="groupName"/>
+        <result column="groupCount" property="groupCount"/>
+    </resultMap>
+    <select id="getTeamByDepartmentId" resultMap="ResultMap">
+        SELECT tbl_team.group_id, tbl_group.group_name, COUNT(*) as groupCount FROM tbl_group
+        JOIN tbl_team On tbl_group.group_id = tbl_team.group_id
+        JOIN tbl_user On tbl_team.team_id = tbl_user.team_id
+        where tbl_user.role_id =3 and tbl_group.department_id = #{departmentId}
+        GROUP BY tbl_group.group_id
+        ORDER BY tbl_group.group_id ASC
+
+    </select>
+</mapper>

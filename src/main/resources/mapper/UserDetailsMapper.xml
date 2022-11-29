@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.kkcloud.trainee.system.mapper.UserDetailsMapper">
+    <!--This is to list all the team details-->
+    <resultMap id="resultMap" type="com.kkcloud.trainee.system.DTO.TeamDetailsDTO">
+        <result column="group_id" property="groupId"/>
+        <collection property="teamDetails" ofType="com.kkcloud.trainee.system.DTO.TeamDTO">
+            <result column="team_id" property="teamId"/>
+            <result column="team_name" property="teamName"/>
+        </collection>
+        <!--        <result column="created_by" property="createdBy"/>-->
+        <!--        <result column="created_at" property="createdAt"/>-->
+        <!--        <result column="updated_by" property="updatedBy"/>-->
+        <!--        <result column="updated_at" property="updatedAt"/>-->
+    </resultMap>
+    <select id="getAllTeamDetails" resultMap="resultMap">
+        select
+        team_id,
+        group_id,
+        team_name
+        from
+        tbl_team
+        <if test="groupId != null and groupId != ''">
+            Where group_id = #{groupId}
+        </if>
+
+    </select>
+
+   <!--   <select id="getAllTeamDetails" resultMap="resultMap">
+          select
+              team_id,
+              group_id,
+              team_name,
+              created_by,
+              created_at,
+              updated_at,
+              updated_by
+          from
+              tbl_team
+      </select>
+
+     department-->
+
+     <resultMap id="departmentResultMap" type="com.kkcloud.trainee.system.model.DepartmentModel">
+         <result column="department_id" property="departmentId"/>
+         <result column="department_name" property="departmentName"/>
+        <!--        <result column="created_by" property="createdBy"/>-->
+        <!--        <result column="created_at" property="createdAt"/>-->
+        <!--        <result column="updated_by" property="updatedBy"/>-->
+        <!--        <result column="updated_at" property="updatedAt"/>-->
+     </resultMap>
+
+
+
+     <select id="getAllDepartment"  resultMap="departmentResultMap">
+         select
+             department_id,
+             department_name,
+             created_by,
+             created_at,
+             updated_at,
+             updated_by
+         from
+             tbl_department
+     </select>
+
+     <!--group-->
+     <resultMap id="getAllGroupList" type="com.kkcloud.trainee.system.model.GroupModel">
+         <result column="group_id" property="groupId"/>
+         <result column="department_id" property="departmentId"/>
+         <result column="group_name" property="groupName"/>
+        <!--        <result column="created_by" property="createdBy"/>-->
+        <!--        <result column="created_at" property="createdAt"/>-->
+        <!--        <result column="updated_by" property="updatedBy"/>-->
+        <!--        <result column="updated_at" property="updatedAt"/>-->
+     </resultMap>
+
+     <select id="getAllGroupList"  resultMap="getAllGroupList">
+        select
+        group_id,
+        department_id,
+        group_name
+        from
+        tbl_group
+        <if test="departmentId != null and departmentId != ''">
+            Where department_id = #{departmentId}
+        </if>
+
+    </select>
+
+    <!--  <select id="getAllGroupList"  resultMap="getAllGroupList">
+           select
+               group_id,
+               department_id,
+               group_name,
+               created_by,
+               created_at,
+               updated_at,
+               updated_by
+           from
+               tbl_group
+      </select>-->
+
+     <!--user-->
+     <resultMap id="getAllUser" type="com.kkcloud.trainee.system.model.UserDetailsModel">
+         <result column="user_id" property="userId"/>
+        <result column="user_username" property="userName"/>
+         <result column="team_id" property="teamId"/>
+        <result column="team_name" property="teamName"/>
+         <result column="role_id" property="roleId"/>
+        <result column="group_id" property="groupId"/>
+        <result column="group_name" property="groupName"/>
+         <result column="user_email" property="userEmail"/>
+         <result column="user_onboarding_date" property="userOnBoardingDate"/>
+         <result column="user_is_team_leader" property="userIsTeamLeader"/>
+     </resultMap>
+
+<!--    SELECT tu.user_id, tu.user_username,-->
+<!--    tu.team_id, tteam.team_name,-->
+<!--    tu.role_id,-->
+<!--    tteam.group_id,  tg.group_name,-->
+<!--    tu.user_email,-->
+<!--    tu.user_onboarding_date,-->
+<!--    tu.user_is_team_leader-->
+<!--    FROM tbl_user as tu-->
+<!--    INNER JOIN tbl_team as tteam-->
+<!--    ON tu.team_id = tteam.team_id-->
+<!--    INNER JOIN tbl_group as tg-->
+<!--    ON tteam.group_id = tg.group_id-->
+<!--    where tu.user_is_deleted = 0-->
+<!--    and tu.role_id = 3 and tu.user_id NOT IN (SELECT TTE.trainee_user_id from tbl_trainee_evaluation as TTE where EXTRACT(YEAR_MONTH FROM TTE.trainee_evaluation_date) =#{traineeEvaluationDate} and TTE.trainee_user_id=tu.user_id)-->
+    <select id="getAllUser"  resultMap="getAllUser">
+
+        SELECT tu.user_id, tu.user_username,
+        tu.team_id, tteam.team_name,
+        tu.role_id,
+        tteam.group_id,  tg.group_name,
+        tu.user_email,
+        tu.user_onboarding_date,
+        tu.user_is_team_leader
+        FROM tbl_user as tu
+        INNER JOIN tbl_team as tteam
+        ON tu.team_id = tteam.team_id
+        INNER JOIN tbl_group as tg
+        ON tteam.group_id = tg.group_id
+        where tu.user_is_deleted = 0 and tu.user_id NOT IN(SELECT tte.trainee_user_id
+        from tbl_trainee_evaluation as TTE INNER JOIN tbl_trainee_in_group_evaluation AS TTIG ON  TTE.trainee_evaluation_id = TTIG.trainee_evaluation_id
+        where EXTRACT(YEAR_MONTH FROM TTE.trainee_evaluation_date) =#{traineeEvaluationDate} and TTIG.trainee_evaluation_id=TTE.trainee_evaluation_id and TTE.trainee_user_id=tu.user_id AND TTE.is_evaluated_by_mentor =1)
+        and tu.role_id = 3  and tu.user_id!= #{userId}
+          <if test="groupId!=null and groupId!='' ">
+            and tteam.group_id = #{groupId}
+        </if>
+        <if test="userName!=null and userName!='' ">
+            and tu.user_username = #{userName}
+        </if>
+  /**/   </select>
+
+
+
+    <resultMap id="traineeList" type="com.kkcloud.trainee.system.model.UserDetailsModel">
+        <result column="user_id" property="userId"/>
+        <result column="user_username" property="userName"/>
+        <result column="team_id" property="teamId"/>
+        <result column="team_name" property="teamName"/>
+        <result column="role_id" property="roleId"/>
+        <result column="group_id" property="groupId"/>
+        <result column="group_name" property="groupName"/>
+        <result column="user_email" property="userEmail"/>
+        <result column="user_onboarding_date" property="userOnBoardingDate"/>
+        <result column="user_is_team_leader" property="userIsTeamLeader"/>
+    </resultMap>
+
+
+    <select id="getEvaluateList"  resultMap="getAllUser">
+        SELECT tu.user_id,
+               tu.user_username,
+               tu.team_id,
+               tteam.team_name,
+               tu.role_id,
+               tteam.group_id,
+               tg.group_name,
+               tu.user_email,
+               tu.user_onboarding_date,
+               tu.user_is_team_leader
+        FROM tbl_user as tu
+                 LEFT OUTER JOIN tbl_team as tteam
+                                 ON tu.team_id = tteam.team_id
+                 LEFT JOIN tbl_group as tg
+                           ON tteam.group_id = tg.group_id
+        where tu.user_is_deleted = 0
+          and tu.role_id = 3
+          and tu.user_id NOT IN (SELECT tte.trainee_user_id
+                                 from tbl_trainee_evaluation as TTE INNER JOIN tbl_trainee_in_group_evaluation AS TTIG ON  TTE.trainee_evaluation_id = TTIG.trainee_evaluation_id
+                                 where EXTRACT(YEAR_MONTH FROM TTE.trainee_evaluation_date) = #{traineeEvaluationDate} and TTIG.trainee_evaluation_id=TTE.trainee_evaluation_id and TTIG.evaluator_user_id = #{userId} and TTE.trainee_user_id = tu.user_id)
+          and tteam.group_id = #{groupId} and tu.user_id!= #{userId}
+    </select>
+
+
+
+    <resultMap id="mentorEvaluateList" type="com.kkcloud.trainee.system.model.UserDetailsModel">
+        <result column="user_id" property="userId"/>
+        <result column="user_username" property="userName"/>
+        <result column="team_id" property="teamId"/>
+        <result column="team_name" property="teamName"/>
+        <result column="role_id" property="roleId"/>
+        <result column="group_id" property="groupId"/>
+        <result column="group_name" property="groupName"/>
+        <result column="user_email" property="userEmail"/>
+        <result column="user_onboarding_date" property="userOnBoardingDate"/>
+        <result column="user_is_team_leader" property="userIsTeamLeader"/>
+    </resultMap>
+
+
+    <select id="getMentorEvaluateList"  resultMap="mentorEvaluateList">
+        SELECT tu.user_id,
+               tu.user_username,
+               tu.team_id,
+               tt.team_name,
+               tu.role_id,
+               tg.group_id,
+               tg.group_name,
+               tu.user_email,
+               tu.user_onboarding_date,
+               tu.user_is_team_leader
+        FROM tbl_trainee_mentor as ttm
+                 INNER JOIN tbl_user as tu ON ttm.trainee_user_id = tu.user_id
+                 INNER JOIN tbl_role as tb ON tu.role_id = tb.role_id
+                 INNER JOIN tbl_team as tt ON tu.team_id = tt.team_id
+                 INNER JOIN tbl_group as tg ON tt.group_id = tg.group_id
+        WHERE ttm.mentor_user_id = #{userId}
+          and tu.user_id NOT IN (SELECT tte.trainee_user_id
+                                 from tbl_trainee_evaluation as TTE
+                                 where EXTRACT(YEAR_MONTH FROM TTE.trainee_evaluation_date) = #{traineeEvaluationDate}
+                                   and TTE.is_evaluated_by_mentor = 1
+                                   and TTE.trainee_user_id = tu.user_id)
+    </select>
+
+
+
+
+
+
+
+
+
+
+
+</mapper>
+

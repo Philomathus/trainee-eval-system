@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kkcloud.trainee.system.mapper.EmployeeMapper">
+
+    <resultMap id="ResultMap" type="com.kkcloud.trainee.system.DTO.EmployeeDTO">
+        <result column="user_username" property="userName"/>
+        <result column="group_name" property="groupName"/>
+        <result column="user_onboarding_date" property="userOnboardDate"/>
+        <result column="department_id" property="departmentId"/>
+    </resultMap>
+
+    <select id="getEmployeeByUsername" resultMap="ResultMap">
+        SELECT DISTINCT
+            tbl_user.user_username,
+            tbl_group.group_name,
+            tbl_user.user_onboarding_date,
+            tbl_group.department_id
+        FROM
+            tbl_user
+        INNER JOIN tbl_team ON tbl_user.team_id = tbl_team.team_id
+        INNER JOIN tbl_group ON tbl_team.group_id = tbl_group.group_id
+        INNER JOIN tbl_trainee_evaluation ON tbl_user.user_id = tbl_trainee_evaluation.trainee_user_id
+        WHERE
+            tbl_user.role_id = 3
+
+            <if test="departmentId != null and departmentId != ''">
+                and  tbl_group.department_id = #{departmentId}
+            </if>
+            <if test=" groupName != null and  groupName != ''">
+                and  tbl_group.group_name = #{groupName}
+            </if>
+            <if test="userName != null and userName != ''">
+                AND tbl_user.user_username LIKE "%"#{userName}"%"
+            </if>
+
+    </select>
+
+</mapper>

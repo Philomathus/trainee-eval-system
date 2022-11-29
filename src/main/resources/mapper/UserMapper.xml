@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.kkcloud.trainee.system.mapper.UserMapper">
+    <resultMap id="userModel" type="com.kkcloud.trainee.system.model.UserModel">
+        <result column="user_id" property="id"/>
+
+        <!-- foreign keys -->
+        <result column="department_id" property="departmentId"/>
+        <result column="group_id" property="groupId"/>
+        <result column="team_id" property="teamId"/>
+        <result column="role_id" property="roleId"/>
+
+        <!-- actual attributes -->
+        <result column="user_username" property="username"/>
+        <result column="user_email" property="email"/>
+        <result column="user_password" property="password"/>
+        <result column="user_onboarding_date" property="onboardingDate"/>
+        <result column="user_is_team_leader" property="isTeamLeader"/>
+        <result column="user_is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <select id="findByUsername" resultMap="userModel">
+        SELECT
+            tbl_user.user_id,
+            tbl_group.department_id,
+            tbl_team.group_id,
+            tbl_user.team_id,
+            tbl_user.role_id,
+            tbl_user.user_username,
+            tbl_user.user_email,
+            tbl_user.user_password,
+            tbl_user.user_onboarding_date,
+            tbl_user.user_is_team_leader,
+            tbl_user.user_is_deleted
+        FROM
+            tbl_user INNER JOIN tbl_team
+                    ON tbl_team.team_id = tbl_user.team_id
+                     INNER JOIN tbl_group
+                    ON tbl_group.group_id = tbl_team.group_id
+        WHERE
+            user_username = #{username}
+    </select>
+
+    <select id="userExists" resultType="Boolean">
+          SELECT EXISTS (
+              SELECT
+              1
+              FROM
+              tbl_user
+              WHERE
+              user_email = #{email} OR user_username = #{userUsername}
+          ) as boolean
+      </select>
+
+      <insert id="registerUser">
+          INSERT INTO  tbl_user
+          (
+              user_id,
+              team_id,
+              role_id,
+              user_username,
+              user_email,
+              user_password,
+              user_onboarding_date,
+              created_by,
+            user_is_deleted,
+            user_is_team_leader,
+              created_at
+          )
+         VALUES
+         (
+            #{userId},
+              #{teamId},
+              #{roleId},
+            #{userUsername},
+              #{email},
+             #{password},
+            #{userOnboardingDate},
+              #{createdBy},
+            #{userIsDeleted},
+            #{userIsTeamLeader},
+              #{createdAt}
+          )
+      </insert>
+
+
+    <insert id="insertMenteeToMentor">
+        INSERT INTO tbl_trainee_mentor
+        (
+            trainee_mentor_id,
+            trainee_mentor_record_id,
+            trainee_user_id,
+            mentor_user_id
+        )
+        VALUES
+        (
+            #{traineeMentorId},
+            #{traineeMentorRecordId},
+            #{traineeUserId},
+            #{mentorUserId}
+        )
+    </insert>
+
+
+
+
+  </mapper>
+

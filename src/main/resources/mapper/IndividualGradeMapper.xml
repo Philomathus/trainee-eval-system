@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kkcloud.trainee.system.mapper.IndividualGradeMapper">
+    <resultMap id="ResultMap" type="com.kkcloud.trainee.system.model.IndividualGradeModel">
+        <result column="user_username" property="username"/>
+        <result column="total_lines_of_codes_rate" property="linesOfCodes"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHours"/>
+        <result column="learning_performance" property="learningPerformance"/>
+        <result column="development_process_performance" property="developmentProcessPerformance"/>
+        <result column="trainee_total_average_ingroup_score" property="avgGroupPerformance"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHours"/>
+        <result column="total_bonus" property="bonusPoints"/>
+        <result column="total_deduction" property="totalDeduction"/>
+        <result column="total_points" property="totalPoints"/>
+        <result column="final_ranking_letter_grade" property="letterGrade"/>
+    </resultMap>
+    <resultMap id="ResultMap3" type="com.kkcloud.trainee.system.model.IndividualGradeModelv2">
+        <result column="user_username" property="username"/>
+        <result column="total_lines_of_codes_rate" property="linesOfCodes"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHours"/>
+        <result column="learning_performance" property="learningPerformance"/>
+        <result column="development_process_performance" property="developmentProcessPerformance"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHours"/>
+        <result column="total_bonus" property="bonusPoints"/>
+        <result column="total_deduction" property="totalDeduction"/>
+        <result column="total_points" property="totalPoints"/>
+        <result column="final_ranking_letter_grade" property="letterGrade"/>
+    </resultMap>
+
+
+    <resultMap id="ResultMap4" type="com.kkcloud.trainee.system.model.AllIndividualGradeRankingModel">
+        <result column="trainee_user_id" property="userId"/>
+        <result column="user_username" property="username"/>
+        <result column="total_lines_of_codes_rate" property="linesOfCodes"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHours"/>
+        <result column="learning_performance" property="learningPerformance"/>
+        <result column="development_process_performance" property="developmentProcessPerformance"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHours"/>
+        <result column="total_bonus" property="bonusPoints"/>
+        <result column="total_deduction" property="totalDeduction"/>
+        <result column="total_points" property="totalPoints"/>
+        <result column="final_ranking_letter_grade" property="letterGrade"/>
+    </resultMap>
+
+<!--    <select id="getIndividualGrade" resultMap="ResultMap">-->
+<!--        SELECT-->
+<!--            total_lines_of_codes_rate,-->
+<!--            jira_working_hours_rate,-->
+<!--            learning_performance,-->
+<!--            development_process_performance,-->
+<!--            avg_in_group_performance,-->
+<!--            actual_working_hours_rate,-->
+<!--            total_bonus,-->
+<!--            total_deduction,-->
+
+<!--            ( total_lines_of_codes_rate +-->
+<!--              jira_working_hours_rate +-->
+<!--              learning_performance+-->
+<!--              development_process_performance+-->
+<!--              avg_in_group_performance+-->
+<!--              actual_working_hours_rate+-->
+<!--              total_bonus - -->
+<!--              total_deduction) AS total_points-->
+<!--        FROM tbl_trainee_evaluation-->
+<!--                 INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id-->
+<!--                 INNER JOIN-->
+<!--             (-->
+<!--                 SELECT-->
+<!--                     trainee_evaluation_id,-->
+<!--                     AVG(total_score) AS avg_in_group_performance-->
+<!--                 FROM tbl_trainee_in_group_evaluation-->
+<!--                 GROUP BY trainee_evaluation_id-->
+<!--             ) AS tbl_average_in_group_evaluation-->
+<!--             ON tbl_trainee_evaluation.trainee_evaluation_id = tbl_average_in_group_evaluation.trainee_evaluation_id-->
+<!--        <where>-->
+<!--            <if test="traineeUserName != null and traineeUserName!=''" >-->
+<!--                AND tbl_user.user_username = #{traineeUserName}-->
+<!--            </if>-->
+<!--            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >-->
+<!--                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}-->
+<!--            </if>-->
+<!--        </where>-->
+<!--        ORDER BY total_points DESC, trainee_evaluation_date DESC-->
+<!--    </select>-->
+    <select id="getIndividualGrade" resultMap="ResultMap">
+        SELECT
+            total_lines_of_codes_rate,
+            jira_working_hours_rate,
+            learning_performance,
+            development_process_performance,
+            actual_working_hours_rate,
+            total_bonus,
+            total_deduction,
+
+            ( total_lines_of_codes_rate +
+              jira_working_hours_rate +
+              learning_performance+
+              development_process_performance+
+              trainee_total_average_ingroup_score+
+              actual_working_hours_rate+
+              total_bonus -
+              total_deduction) AS total_points,
+        final_ranking_letter_grade
+        FROM tbl_trainee_evaluation
+                 INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+        <where>
+            <if test="traineeUserName != null and traineeUserName!=''" >
+                tbl_user.user_username = #{traineeUserName}
+            </if>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+
+        </select>
+
+    <select id="setTotalPoint" resultMap="ResultMap">
+        SELECT
+        total_lines_of_codes_rate,
+        jira_working_hours_rate,
+        learning_performance,
+        development_process_performance,
+        actual_working_hours_rate,
+        total_bonus,
+        total_deduction,
+
+        ( total_lines_of_codes_rate +
+        jira_working_hours_rate +
+        learning_performance+
+        development_process_performance+
+        trainee_total_average_ingroup_score+
+        actual_working_hours_rate+
+        total_bonus -
+        total_deduction) AS total_points,
+        final_ranking_letter_grade
+        FROM tbl_trainee_evaluation
+        INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+        <where>
+            <if test="traineeUserName != null and traineeUserName!=''" >
+                tbl_user.user_username = #{traineeUserName}
+            </if>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+
+    </select>
+
+
+
+
+
+
+    <select id="getIndividualGrade2" resultMap="ResultMap3">
+        SELECT
+        total_lines_of_codes_rate,
+        jira_working_hours_rate,
+        learning_performance,
+        development_process_performance,
+        trainee_total_average_ingroup_score_rate,
+        actual_working_hours_rate,
+        total_bonus,
+        total_deduction,
+
+        (total_lines_of_codes_rate + learning_performance + jira_working_hours_rate +
+        trainee_total_average_ingroup_score_rate + development_process_performance +
+        actual_working_hours_rate + (total_bonus - total_deduction)) AS total_points,
+        final_ranking_letter_grade
+        FROM tbl_trainee_evaluation
+        INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+        <where>
+            <if test="traineeUserName != null and traineeUserName!=''" >
+                tbl_user.user_username = #{traineeUserName}
+            </if>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+
+    </select>
+
+    <select id="getIndividualGrade3" resultMap="ResultMap4">
+        SELECT
+        trainee_user_id,
+        total_lines_of_codes_rate,
+        jira_working_hours_rate,
+        learning_performance,
+        development_process_performance,
+        trainee_total_average_ingroup_score,
+        actual_working_hours_rate,
+        total_bonus,
+        total_deduction,
+
+        ( total_lines_of_codes_rate +
+        jira_working_hours_rate +
+        learning_performance+
+        development_process_performance+
+        trainee_total_average_ingroup_score+
+        actual_working_hours_rate+
+        total_bonus -
+        total_deduction) AS total_points,
+        final_ranking_letter_grade
+        FROM tbl_trainee_evaluation
+        INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+        <where>
+            <if test="traineeUserName != null and traineeUserName!=''" >
+                tbl_user.user_username = #{traineeUserName}
+            </if>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+
+    </select>
+
+
+    <select id="setTotalPoint1" resultMap="ResultMap4">
+        SELECT
+        trainee_user_id,
+        total_lines_of_codes_rate,
+        jira_working_hours_rate,
+        learning_performance,
+        development_process_performance,
+        trainee_total_average_ingroup_score,
+        actual_working_hours_rate,
+        total_bonus,
+        total_deduction,
+
+        ( total_lines_of_codes_rate +
+        jira_working_hours_rate +
+        learning_performance+
+        development_process_performance+
+        trainee_total_average_ingroup_score+
+        actual_working_hours_rate+
+        total_bonus -
+        total_deduction) AS total_points,
+        final_ranking_letter_grade
+        FROM tbl_trainee_evaluation
+        INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+        <where>
+            <if test="traineeUserName != null and traineeUserName!=''" >
+                tbl_user.user_username = #{traineeUserName}
+            </if>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+
+    </select>
+
+
+
+
+    <resultMap id="ResultMap2" type="com.kkcloud.trainee.system.model.AllIndividualGradeRankingModel">
+        <result column="trainee_user_id" property="userId"/>
+        <result column="user_username" property="username"/>
+        <result column="trainee_evaluation_date" property="evaluationDate"/>
+        <result column="total_lines_of_codes_rate" property="linesOfCodes"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHours"/>
+        <result column="learning_performance" property="learningPerformance"/>
+        <result column="development_process_performance" property="developmentProcessPerformance"/>
+        <result column="avg_in_group_performance" property="avgGroupPerformance"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHours"/>
+        <result column="total_bonus" property="bonusPoints"/>
+        <result column="total_deduction" property="totalDeduction"/>
+        <result column="total_points" property="totalPoints"/>
+    </resultMap>
+
+
+    <select id="getAllIndividualGradeRanking" resultMap="ResultMap2">
+        SELECT trainee_user_id,
+               tbl_user.user_username,
+               EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) AS trainee_evaluation_date,
+            total_lines_of_codes_rate,
+            jira_working_hours_rate,
+            learning_performance,
+            development_process_performance,
+            avg_in_group_performance,
+            actual_working_hours_rate,
+            total_bonus,
+            total_deduction,
+
+            ( (total_lines_of_codes_rate + jira_working_hours_rate) +
+              (learning_performance + development_process_performance) +
+              (avg_in_group_performance + actual_working_hours_rate) +
+              (total_bonus) - (total_deduction)) AS total_points
+        FROM tbl_trainee_evaluation
+                 INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+                 INNER JOIN
+             (
+                 SELECT
+                     trainee_evaluation_id,
+                     AVG(total_score) AS avg_in_group_performance
+                 FROM tbl_trainee_in_group_evaluation
+                 GROUP BY trainee_evaluation_id
+             ) AS tbl_average_in_group_evaluation
+             ON tbl_trainee_evaluation.trainee_evaluation_id = tbl_average_in_group_evaluation.trainee_evaluation_id
+        <where>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+
+    </select>
+
+
+    <resultMap id="Results" type="com.kkcloud.trainee.system.model.OverallScoreModel2">
+        <result column="trainee_user_id" property="userId"/>
+        <result column="department_id" property="deptId"/>
+        <result column="user_username" property="username"/>
+        <result column="group_name" property="groupName"/>
+        <result column="total_points" property="totalScore"/>
+        <result column="final_ranking_letter_grade" property="letterGrade"/>
+    </resultMap>
+
+    <select id="get" resultMap="Results">
+        SELECT trainee_user_id,
+               tbl_group.department_id,
+               tbl_user.user_username,
+               tbl_group.group_name,
+               (total_lines_of_codes_rate + learning_performance + jira_working_hours_rate +
+                trainee_total_average_ingroup_score_rate + development_process_performance +
+                actual_working_hours_rate + (total_bonus - total_deduction)) AS total_points,
+               tbl_trainee_evaluation.final_ranking_letter_grade
+        FROM tbl_trainee_evaluation
+                 INNER JOIN tbl_user ON tbl_user.user_id = tbl_trainee_evaluation.trainee_user_id
+                 INNER JOIN tbl_team ON tbl_team.team_id = tbl_user.team_id
+                 INNER JOIN tbl_group ON tbl_group.group_id = tbl_team.group_id
+        WHERE EXTRACT(YEAR_MONTH FROM tbl_trainee_evaluation.trainee_evaluation_date) = #{date}
+        ORDER BY total_points DESC , final_ranking_letter_grade ASC
+
+    </select>
+
+
+
+
+
+
+    <select id="getAllIndividualGradeRanking2" resultMap="ResultMap2">
+        SELECT trainee_user_id,
+        tbl_user.user_username,
+        EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) AS trainee_evaluation_date,
+        total_lines_of_codes_rate,
+        jira_working_hours_rate,
+        learning_performance,
+        development_process_performance,
+        avg_in_group_performance,
+        actual_working_hours_rate,
+        total_bonus,
+        total_deduction,
+
+        ( (total_lines_of_codes_rate + jira_working_hours_rate) +
+        (learning_performance + development_process_performance) +
+        (avg_in_group_performance + actual_working_hours_rate) +
+        (total_bonus) - (total_deduction)) AS total_points
+        FROM tbl_trainee_evaluation
+        INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+        INNER JOIN
+        (
+        SELECT
+        trainee_evaluation_id,
+        AVG(total_score) AS avg_in_group_performance
+        FROM tbl_trainee_in_group_evaluation
+        GROUP BY trainee_evaluation_id
+        ) AS tbl_average_in_group_evaluation
+        ON tbl_trainee_evaluation.trainee_evaluation_id = tbl_average_in_group_evaluation.trainee_evaluation_id
+        <where>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY tbl_trainee_evaluation.trainee_total_average_ingroup_score DESC
+
+    </select>
+
+
+
+    <select id="getAllUserRow" resultType="java.lang.Integer">
+           SELECT count(*)
+     FROM tbl_trainee_evaluation
+        WHERE EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+
+    </select>
+
+    <select id="getAllUserRowTraineeEvaluated" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM tbl_trainee_evaluation
+        WHERE EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) =#{traineeEvaluationDate}
+
+    </select>
+
+    <select id="getAllUserRowMentorEvaluated" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM tbl_trainee_evaluation
+        WHERE EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) =#{traineeEvaluationDate} and is_evaluated_by_mentor = 1
+    </select>
+
+
+    <select id="countAllTraineeUser" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM tbl_user
+        WHERE role_id = 3
+    </select>
+
+
+
+
+
+
+
+    <update id="update">
+        update tbl_trainee_evaluation
+        <set>
+            trainee_evaluation_letter_grade = #{letterGrade}
+        </set>
+        where trainee_user_id = #{userId}
+        AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+    </update>
+
+    <update id="finalGradeUpdate">
+        update tbl_trainee_evaluation
+        <set>
+            final_ranking_letter_grade = #{letterGrade}
+        </set>
+        where trainee_user_id = #{userId}
+        AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+    </update>
+
+
+    <update id="totalPoints">
+        update tbl_trainee_evaluation
+        <set>
+            total_points = #{totalPoints}
+        </set>
+        where trainee_user_id = #{userId}
+        AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+    </update>
+
+
+
+    <update id="updateAvgGroupPerformanceRate">
+        update tbl_trainee_evaluation
+        <set>
+            trainee_total_average_ingroup_score_rate = #{a}
+        </set>
+        where trainee_user_id = #{id}
+        AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{date}
+    </update>
+
+
+
+    <select id="getUsername" resultType="java.lang.String">
+        SELECT user_username
+        FROM tbl_user
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="setUserId" resultType="java.lang.Integer">
+        SELECT user_id
+        FROM tbl_user
+        WHERE user_username = #{traineeUserName}
+    </select>
+
+
+    <resultMap id="filterTraineeGradeResults" type="com.kkcloud.trainee.system.model.IndividualGradeMonthModel">
+        <result column="trainee_user_id" property="traineeUserId"/>
+        <result column="user_username" property="userName"/>
+        <result column="trainee_evaluation_date" property="evaluationDate"/>
+        <result column="trainee_evaluation_letter_grade" property="letterGrade"/>
+    </resultMap>
+
+
+    <select id="filterTraineeGrade" resultMap="filterTraineeGradeResults">
+        select tte.trainee_user_id,
+               tu.user_username,
+               tte.trainee_evaluation_date,
+               tte.trainee_evaluation_letter_grade
+        from tbl_trainee_evaluation AS tte
+        inner join tbl_user AS tu
+        ON tte.trainee_user_id = tu.user_id
+        <where>
+            <if test="traineeUserName != null and traineeUserName!=''" >
+               AND tu.user_username = #{traineeUserName}
+            </if>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+            AND EXTRACT(YEAR_MONTH FROM tte.trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY tte.trainee_evaluation_date ASC
+        LIMIT 6
+    </select>
+
+
+
+    <resultMap id="IndividualGradeResultMap" type="com.kkcloud.trainee.system.model.IndividualGradeModelv2">
+        <result column="total_lines_of_codes_rate" property="linesOfCodes"/>
+        <result column="jira_working_hours_rate" property="jiraWorkingHours"/>
+        <result column="learning_performance" property="learningPerformance"/>
+        <result column="development_process_performance" property="developmentProcessPerformance"/>
+        <result column="trainee_total_average_ingroup_score_rate" property="inGroupPerformance"/>
+        <result column="actual_working_hours_rate" property="actualWorkingHours"/>
+        <result column="total_bonus" property="bonusPoints"/>
+        <result column="total_deduction" property="totalDeduction"/>
+        <result column="total_points" property="totalPoints"/>
+        <result column="final_ranking_letter_grade" property="letterGrade"/>
+    </resultMap>
+
+
+
+    <select id="getGrades" resultMap="IndividualGradeResultMap">
+        SELECT
+        total_lines_of_codes_rate,
+        jira_working_hours_rate,
+        learning_performance,
+        development_process_performance,
+        trainee_total_average_ingroup_score_rate,
+        actual_working_hours_rate,
+        total_bonus,
+        total_deduction,
+
+        (total_lines_of_codes_rate + learning_performance + jira_working_hours_rate +
+        trainee_total_average_ingroup_score_rate + development_process_performance +
+        actual_working_hours_rate + (total_bonus - total_deduction)) AS total_points,
+        final_ranking_letter_grade
+        FROM tbl_trainee_evaluation
+        INNER JOIN tbl_user ON tbl_trainee_evaluation.trainee_user_id = tbl_user.user_id
+        <where>
+            <if test="traineeUserName != null and traineeUserName!=''" >
+                tbl_user.user_username = #{traineeUserName}
+            </if>
+            <if test="traineeEvaluationDate != null and  traineeEvaluationDate!=''" >
+                AND EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+            </if>
+        </where>
+        ORDER BY total_points DESC, trainee_evaluation_date DESC
+
+    </select>
+
+
+
+
+
+
+</mapper>

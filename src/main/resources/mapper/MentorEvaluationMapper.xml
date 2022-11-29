@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kkcloud.trainee.system.mapper.MentorEvaluationMapper">
+
+
+    <insert id="submitIndividualPerformance">
+        INSERT INTO
+            criteria_mentor_individual_performance(trainee_id,
+                                                   user_id,
+                                                   total_lines_of_codes,
+                                                   jira_working_hours,
+                                                   actual_working_hours,
+                                                   learning_performance,
+                                                   development_process_performance,
+                                                   created_by, created_at,
+                                                   updated_by, updated_at)
+        VALUES(#{traineeId},
+               #{mentorId},
+               #{lineOfCode},
+               #{jiraWorkingHours},
+               #{actualWorkingHours},
+               #{learningPerformance},
+               #{developmentPerformance},
+               #{updatedBy},#{updatedAt},
+               #{updatedBy},#{updatedAt}
+              )
+    </insert>
+
+    <insert id="submitPointBonuses">
+        INSERT INTO	criteria_mentor_point_bonuses( trainee_id,
+                                                  user_id,
+                                                  leadership_skill,
+                                                  knowledge_sharing,
+                                                  tough_task,
+                                                  total_bonus,
+                                                  created_by, updated_by,
+                                                  created_at, updated_at)
+        VALUES(#{traineeId},
+               #{mentorId},
+               #{leadership},
+               #{knowledgeSharing},
+               #{documentProduction},
+               #{totalBonus},
+               #{updatedBy},#{updatedBy},
+               #{updatedAt},#{updatedAt})
+    </insert>
+
+    <insert id="submitPointDeductions">
+        INSERT INTO criteria_mentor_point_deductions( trainee_id, user_id, work_related_violations, leave_deduction, late, absenteeism, total_deduction, created_by, updated_by,
+                                                      created_at, updated_at)
+        VALUES(#{traineeId},
+               #{mentorId},
+               #{workViolation},
+               #{leave},
+               #{late},
+               #{absenteeism},
+               #{totalDeduction},
+               #{updatedBy},#{updatedBy},
+               #{updatedAt},#{updatedAt})
+    </insert>
+    <insert id="submitEvaluationFormByMentor">
+        INSERT INTO tbl_trainee_evaluation(
+                                           trainee_user_id,
+                                           trainee_evaluation_date,
+                                           total_lines_of_codes,
+                                           jira_working_hours,
+                                           actual_working_hours,
+                                           learning_performance,
+                                           development_process_performance,
+                                           leadership_skills,
+                                           knowledge_sharing,
+                                           tough_task,
+                                           work_related_violations,
+                                           leave_deduction,
+                                           late,
+                                           absenteeism,
+                                           created_by, created_at,
+                                           updated_by, updated_at,is_evaluated_by_mentor
+        )
+        VALUES(
+                  #{traineeId},
+                  #{updatedAt},
+                  #{lineOfCode},
+                  #{jiraWorkingHours},
+                  #{actualWorkingHours},
+                  #{learningPerformance},
+                  #{developmentPerformance},
+                  #{leadership},
+                  #{knowledgeSharing},
+                  #{documentProduction},
+                  #{workViolation},
+                  #{leave},
+                  #{late},
+                  #{absenteeism},
+                  #{updatedBy},#{updatedAt},
+                  #{updatedBy},#{updatedAt}, 1
+
+              )
+    </insert>
+    <insert id="insertLockTraineeEvaluationStatus">
+        INSERT INTO tbl_trainee_evaluation( trainee_user_id,
+                                            trainee_evaluation_date,created_by, created_at, check_evaluation_status)
+        VALUES(
+                  #{traineeId},
+                  #{updatedAt}, (SELECT user_username from tbl_user where user_id = #{mentorId}),#{updatedAt}, #{mentorId})
+    </insert>
+
+    <update id="updateJiraRate">
+        UPDATE tbl_trainee_evaluation SET jira_working_hours_rate=#{userGrade} where trainee_evaluation_id = #{userId}
+    </update>
+    <update id="updateCodeLinesRate">
+        UPDATE tbl_trainee_evaluation SET total_lines_of_codes_rate=#{userGrade} where trainee_evaluation_id = #{userId}
+    </update>
+    <update id="updateWorkingHoursRate">
+        UPDATE tbl_trainee_evaluation SET actual_working_hours_rate=#{userGrade} where trainee_evaluation_id = #{userId}
+    </update>
+    <update id="updateEvaluationForm">
+
+        UPDATE tbl_trainee_evaluation SET
+
+            trainee_evaluation_date = #{updatedAt},
+            total_lines_of_codes = #{lineOfCode},
+            jira_working_hours = #{jiraWorkingHours},
+            actual_working_hours = #{actualWorkingHours},
+            learning_performance = #{learningPerformance},
+            development_process_performance = #{developmentPerformance},
+            leadership_skills = #{leadership},
+            knowledge_sharing =  #{knowledgeSharing},
+            tough_task = #{documentProduction},
+            work_related_violations = #{workViolation},
+            leave_deduction = #{leave},
+            late = #{late},
+            absenteeism = #{absenteeism},
+            updated_by = #{updatedBy}, updated_at = #{updatedAt}, is_evaluated_by_mentor = 1
+       Where trainee_evaluation_id = #{traineeEvaluationId}
+
+
+    </update>
+    <update id="updateAverageIngroup">
+
+       UPDATE tbl_trainee_evaluation as A SET trainee_total_average_ingroup_score = (select (SELECT AVG(total_score) AS avg_in_group_performance from tbl_trainee_in_group_evaluation
+                                                                                             where  tbl_trainee_in_group_evaluation.trainee_evaluation_id = A.trainee_evaluation_id AND EXTRACT(YEAR_MONTH FROM A.trainee_evaluation_date) = #{traineeEvaluationDate,jdbcType=INTEGER}   GROUP BY tbl_trainee_in_group_evaluation.trainee_evaluation_id)
+       where  EXTRACT(YEAR_MONTH FROM A.trainee_evaluation_date) = #{traineeEvaluationDate,jdbcType=INTEGER} and A.trainee_user_id = #{userId,jdbcType=INTEGER})
+       WHERE trainee_evaluation_id = #{evalId,jdbcType=INTEGER}
+
+
+</update>
+    <update id="cancelCheckEvaluationStatus">
+        UPDATE tbl_trainee_evaluation SET check_evaluation_status = 0 where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and trainee_user_id = #{traineeId}
+    </update>
+    <update id="updateLockTraineeEvaluationStatus">
+        UPDATE tbl_trainee_evaluation SET check_evaluation_status = #{mentorId} where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and trainee_user_id = #{traineeId}
+    </update>
+
+
+    <resultMap id="checkRankLineofCodesMap" type="com.kkcloud.trainee.system.DTO.MentorEvaluationFormDTO">
+        <result column="jiraWorkingHours" property="jiraWorkingHours"/>
+        <result column="traineeId" property="traineeId"/>
+        <result column="mentorId" property="mentorId"/>
+    </resultMap>
+    <select id="checkRankLineofCodes" resultMap="checkRankLineofCodesMap">
+        select tte.trainee_evaluation_id as traineeId,
+               ROW_NUMBER() OVER(ORDER BY jira_working_hours DESC) as mentorId,
+               tte.jira_working_hours as jiraWorkingHours
+        from tbl_trainee_evaluation as tte
+        where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+    </select>
+
+
+    <resultMap id="checkCodelinesMap" type="com.kkcloud.trainee.system.DTO.MentorEvaluationFormDTO">
+        <result column="jiraWorkingHours" property="jiraWorkingHours"/>
+        <result column="traineeId" property="traineeId"/>
+        <result column="mentorId" property="mentorId"/>
+    </resultMap>
+    <select id="checkCodelines" resultMap="checkCodelinesMap">
+        select tte.trainee_evaluation_id as traineeId,
+               ROW_NUMBER() OVER(ORDER BY total_lines_of_codes DESC) as mentorId,
+               tte.total_lines_of_codes as jiraWorkingHours
+        from tbl_trainee_evaluation as tte
+        where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+
+
+    </select>
+    <resultMap id="checkWorkingHoursMap" type="com.kkcloud.trainee.system.DTO.MentorEvaluationFormDTO">
+        <result column="actualWorkingHours" property="actualWorkingHours"/>
+        <result column="traineeId" property="traineeId"/>
+        <result column="mentorId" property="mentorId"/>
+    </resultMap>
+    <select id="checkWorkingHours"  resultMap="checkWorkingHoursMap">
+        select tte.trainee_evaluation_id as traineeId,
+               ROW_NUMBER() OVER(ORDER BY actual_working_hours DESC) as mentorId,
+               tte.actual_working_hours as actualWorkingHours
+        from tbl_trainee_evaluation as tte
+        where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate}
+
+    </select>
+    <select id="checkEvaluationID" resultType="java.lang.Long">
+        select tte.trainee_evaluation_id as traineeId
+          from tbl_trainee_evaluation as tte
+          where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and tte.trainee_user_id = #{traineeId}
+          LIMIT 1
+    </select>
+    <select id="checkTraineeIdExist" resultType="java.lang.Boolean">
+
+
+
+        select EXISTS (
+                       select tte.trainee_evaluation_id as traineeId
+                       from tbl_trainee_evaluation as tte
+                       where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and tte.trainee_user_id = #{traineeId}
+                   ) as boolean
+    </select>
+    <select id="getInGroupTraineeEvaluationId" resultType="java.lang.Integer">
+        select tte.trainee_evaluation_id as traineeId
+        from tbl_trainee_evaluation as tte
+        where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and tte.trainee_user_id = #{traineeId}
+            LIMIT 1
+    </select>
+    <select id="checkMentorEvaluated" resultType="java.lang.Boolean">
+
+        select EXISTS (
+                       select tte.trainee_evaluation_id as traineeId
+                       from tbl_trainee_evaluation as tte
+                       where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and tte.trainee_user_id = #{traineeId} and tte.is_evaluated_by_mentor=1
+                   ) as boolean
+
+    </select>
+    <select id="checkTraineeFormStatus" resultType="java.lang.Boolean">
+        select EXISTS (
+                       select tte.trainee_evaluation_id as traineeId
+                       from tbl_trainee_evaluation as tte
+                       where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and tte.trainee_user_id = #{traineeId} and tte.check_evaluation_status!=0
+                   ) as boolean
+    </select>
+    <select id="checkMentorId" resultType="java.lang.Integer">
+        select tte.check_evaluation_status as traineeId
+        from tbl_trainee_evaluation as tte
+        where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and tte.trainee_user_id = #{traineeId}
+
+    </select>
+    <select id="checkTraineeFormStatus1" resultType="java.lang.Boolean">
+        select EXISTS (
+                       select tte.trainee_evaluation_id as traineeId
+                       from tbl_trainee_evaluation as tte
+                       where  EXTRACT(YEAR_MONTH FROM trainee_evaluation_date) = #{traineeEvaluationDate} and tte.trainee_user_id = #{traineeId} and tte.check_evaluation_status=0
+                   ) as boolean
+    </select>
+    <select id="checkUserRoleId" resultType="java.lang.Integer">
+        SELECT role_id from tbl_user where user_id = #{mentorId}
+    </select>
+
+
+</mapper>
